@@ -2,19 +2,30 @@ module.exports = function(grunt) {
 
     // Project configuration.
     grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
+        pkg: grunt.package, //grunt.file.readJSON('package.json'),
         my: {
-          vendor: 'bower_components',
-          css: {
-            main: 'css',
-            entryFile: 'main.less',
-            assets: '/assets', // relative to main (previous key)
-            build: '/build'
-          }
+            vendor: 'bower_components',
+            assetsRoot: 'vendor_assets',
+            css: {
+                main: 'css',
+                entryFile: 'main.less',
+                assets: '/assets', // relative to main (previous key)
+                build: '/build'
+            }
         },
         clean: {
             dev: {
-                src: ['<%= my.css.main %><%= my.css.build %>']
+                src: ['<%= my.css.main %><%= my.css.build %>', '<%= my.assetsRoot %>']
+            }
+        },
+        copy: {
+            bootstrap_assets: {
+                files: [{
+                    expand: true,
+                    cwd: '<%= my.vendor %>',
+                    src: ['bootstrap/dist/fonts/**/*'],
+                    dest: '<%= my.assetsRoot %>'
+                }]
             }
         },
         less: {
@@ -42,14 +53,53 @@ module.exports = function(grunt) {
                 },
                 files: '<%= less.dev.files %>'
             }
+        },
+        delta: {
+            /**
+             * By default, we want the Live Reload to work for all tasks; this is
+             * overridden in some tasks (like this file) where browser resources are
+             * unaffected. It runs by default on port 35729, which your browser
+             * plugin should auto-detect.
+             */
+            options: {
+                livereload: true
+            },
+            /**
+             * When the Gruntfile changes, we just want to lint it. In fact, when
+             * your Gruntfile changes, it will automatically be reloaded!
+             */
+            gruntfile: {
+                files: 'Gruntfile.js',
+                tasks: [],
+                options: {
+                    livereload: false
+                }
+            },
+            /**
+             * When the CSS files change, we need to compile and minify them.
+             */
+            less: {
+                files: ['<%= my.css.main %>/**/*', '!<%= my.css.main %><%= my.css.build %>/**/*'],
+                tasks: ['less:dev']
+            },
+            copy: {
+                files: ['<%= my.vendor %>/**/*'],
+                tasks: ['build']
+            }
         }
     });
 
     // Load the plugins that provides the tasks.
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-less');
-    
+    grunt.loadNpmTasks('grunt-contrib-watch');
+
+    grunt.registerTask('build', ['clean:dev', 'copy', 'less:dev']);
+
+    grunt.renameTask('watch', 'delta');
+    grunt.registerTask('watch', ['build', 'delta']);
 
     // Default task(s).
-    grunt.registerTask('default', ['clean:dev', 'less:dev']);
+    grunt.registerTask('default', ['build']);
 };

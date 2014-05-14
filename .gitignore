@@ -1,4 +1,5 @@
 build/
+vendor_assets/
 bower_components/
 node_modules/
 bin/
